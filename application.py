@@ -10,7 +10,10 @@ from fastapi.responses import PlainTextResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from datetime import datetime
 
-from pydantic import BaseModel
+from datamodel.response import RossmannResponse
+from datamodel.request import RossmannRequest
+from processing.validator import sample_validation
+import processing.transformer as transform
 
 logger = logging.getLogger(__name__)
 maps: Optional[list[dict]] = None
@@ -21,80 +24,10 @@ is_ok: bool = False
 app = FastAPI()
 
 
-class RossmannRequest(BaseModel):
-    Id: int = 0
-    Store: int = 1
-    DayOfWeek: int = 1
-    Date: str = '2015-08-01'
-    Open: bool = 1
-    Promo: bool = 0
-    StateHoliday: str = '0'
-    SchoolHoliday: bool = 0
-
-
-class RossmannResponse(BaseModel):
-    Id: int
-    Sales: float
-
-
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request, exc):
     return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
 
-
-def sample_validation(sample: RossmannRequest) -> tuple[bool, str]:
-    try:
-        datetime.strptime(sample.Date, '%Y-%m-%d')
-    except ValueError:
-        return False, "Invalid Date! Print date in format YYYY-MM-DD"
-    try:
-        if sample.Store < 1 or sample.Store > 1115:
-            raise ValueError('Store must be >=1 and <=1115')
-        if sample.DayOfWeek < 1 or sample.DayOfWeek > 7:
-            raise ValueError('DayOfWeek must be >=1 and <=7')
-        if sample.Open not in [0, 1]:
-            raise ValueError('Open must be either 0 or 1')
-        if sample.Promo not in [0, 1]:
-            raise ValueError('Promo must be either 0 or 1')
-        if sample.SchoolHoliday not in [0, 1]:
-            raise ValueError('SchoolHoliday must be either 0 or 1')
-        if sample.StateHoliday not in ['0', 'a', 'b', 'c']:
-            raise ValueError("StateHoliday must be in ['0', 'a', 'b', 'c']")
-        return True, ""
-    except ValueError as error:
-        return False, str(error)
-
-
-def transform_to_df(requests: list[RossmannRequest]):
-    sam = [request.dict() for request in requests]
-    df = pd.DataFrame(sam)
-
-    df[['Promo', 'SchoolHoliday']] = df[['Promo', 'SchoolHoliday']].astype('object')
-    df.drop(['Open'], axis=1, inplace=True)
-
-    # New features
-    df['Date'] = pd.to_datetime(df['Date'])
-    df['Year'] = df.Date.dt.year
-    df['Month'] = df.Date.dt.month
-    df['DayOfMonth'] = df.Date.dt.day
-    df['WeekOfYear'] = df.Date.dt.isocalendar().week
-    df.drop('Date', axis=1, inplace=True)
-
-    # Merging
-    df_merged = df.merge(store_data, how='inner', on='Store')
-    df_merged['WeekOfYear'] = df_merged['WeekOfYear'].astype('int')
-
-    # Again some features
-    df_merged['Current-OpenComp'] = 12 * (df_merged['Year'] - df_merged['CompetitionOpenSinceYear']) \
-                                    + (df_merged['Month'] - df_merged['CompetitionOpenSinceMonth'])
-    df_merged['Current-OpenPromo'] = 12 * (df_merged['Year'] - df_merged['Promo2SinceYear']) \
-                                     + (df_merged['Month'] - df_merged['Promo2SinceWeek'] * 12 / 52)
-
-    # Encoding
-    for i, col in enumerate(df_merged.loc[:, df_merged.dtypes == 'object']):
-        df_merged[col].replace(maps[i], inplace=True)
-
-    return df_merged
 
 
 def load_from_archives(path: str):
@@ -132,7 +65,7 @@ def prediction(requests: list[RossmannRequest]):
         if request.Open == 0:
             return RossmannResponse(Id=request.Id, Sales=0)
 
-    requests_df = transform_to_df(requests)
+    requests_df = transform.transform_to_df(requests)
     ids_, requests_df = requests_df['Id'], requests_df.drop('Id', axis=1)
 
     predicted_sales = model.predict(requests_df)
