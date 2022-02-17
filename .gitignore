@@ -1,0 +1,11 @@
+/venv
+Untitled.ipynb
+/pickle_packages
+
+# IDE
+.idea/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+__pycache__/
