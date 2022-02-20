@@ -1,1 +1,2 @@
-# inference_service
+# Inference service
+Opening soon! Check for updates...
