@@ -1,6 +1,17 @@
 from datetime import datetime
+from typing import Union
 
 from datamodel.request import RossmannRequest
+
+
+def is_in_range(value: int, range_list: list[int], attribute_name: str) -> None:
+    if not range_list[0] <= value <= range_list[1]:
+        raise ValueError(f'{attribute_name} must be >={range_list[0]} and <={range_list[1]}')
+
+
+def is_in_list(value: Union[int, str], value_list: list, attribute_name: str) -> None:
+    if value not in value_list:
+        raise ValueError(f'{attribute_name} must be in list {value_list}')
 
 
 def sample_validation(sample: RossmannRequest) -> tuple[bool, str]:
@@ -9,18 +20,14 @@ def sample_validation(sample: RossmannRequest) -> tuple[bool, str]:
     except ValueError:
         return False, "Invalid Date! Print date in format YYYY-MM-DD"
     try:
-        if sample.Store < 1 or sample.Store > 1115:
-            raise ValueError('Store must be >=1 and <=1115')
-        if sample.DayOfWeek < 1 or sample.DayOfWeek > 7:
-            raise ValueError('DayOfWeek must be >=1 and <=7')
-        if sample.Open not in [0, 1]:
-            raise ValueError('Open must be either 0 or 1')
-        if sample.Promo not in [0, 1]:
-            raise ValueError('Promo must be either 0 or 1')
-        if sample.SchoolHoliday not in [0, 1]:
-            raise ValueError('SchoolHoliday must be either 0 or 1')
-        if sample.StateHoliday not in ['0', 'a', 'b', 'c']:
-            raise ValueError("StateHoliday must be in ['0', 'a', 'b', 'c']")
+        is_in_range(sample.Store, [1, 1115], 'Store')
+        is_in_range(sample.DayOfWeek, [1, 7], 'DayOfWeek')
+
+        is_in_list(sample.Open, [0, 1], 'Open')
+        is_in_list(sample.Promo, [0, 1], 'Promo')
+        is_in_list(sample.SchoolHoliday, [0, 1], 'SchoolHoliday')
+        is_in_list(sample.StateHoliday, ['0', 'a', 'b', 'c'], 'StateHoliday')
+
         return True, ""
     except ValueError as error:
         return False, str(error)

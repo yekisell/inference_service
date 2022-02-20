@@ -23,10 +23,12 @@ def transform_to_df(requests: list[RossmannRequest]):
     df_merged['WeekOfYear'] = df_merged['WeekOfYear'].astype('int')
 
     # Again some features
-    df_merged['Current-OpenComp'] = 12 * (df_merged['Year'] - df_merged['CompetitionOpenSinceYear']) \
-                                    + (df_merged['Month'] - df_merged['CompetitionOpenSinceMonth'])
-    df_merged['Current-OpenPromo'] = 12 * (df_merged['Year'] - df_merged['Promo2SinceYear']) \
-                                     + (df_merged['Month'] - df_merged['Promo2SinceWeek'] * 12 / 52)
+    df_merged['Current-OpenComp'] = \
+        12 * (df_merged['Year'] - df_merged['CompetitionOpenSinceYear']) \
+        + (df_merged['Month'] - df_merged['CompetitionOpenSinceMonth'])
+    df_merged['Current-OpenPromo'] = \
+        12 * (df_merged['Year'] - df_merged['Promo2SinceYear']) \
+        + (df_merged['Month'] - df_merged['Promo2SinceWeek'] * 12 / 52)
 
     # Encoding
     for i, col in enumerate(df_merged.loc[:, df_merged.dtypes == 'object']):

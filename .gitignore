@@ -1,5 +1,4 @@
 /venv
-Untitled.ipynb
 /pickle_packages
 
 # IDE
@@ -7,5 +6,6 @@ Untitled.ipynb
 
 # Jupyter Notebook
 .ipynb_checkpoints
+Untitled.ipynb
 
 __pycache__/
