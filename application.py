@@ -34,9 +34,10 @@ def load_from_archives(path: str):
 
 @app.on_event("startup")
 def load_savings():
-    maps_path = "pickle_packages/encoding_maps"
-    store_path = "pickle_packages/stores_data"
-    model_path = "pickle_packages/xgb_model_1500"
+    pickle_path = "pickle_packages/"
+    maps_path = pickle_path + "encoding_maps"
+    store_path = pickle_path + "stores_data"
+    model_path = pickle_path + "xgb_model_1500"
     try:
         maps_l = load_from_archives(maps_path)
         store_data_l = load_from_archives(store_path)
